@@ -115,14 +115,24 @@ Pi <- DATA2$Prob2
 ID <- DATA2$Stratum
 mcmc <- HB_PSU2(Y, x, Pi, ID, L=7, mc=10000, bn=3000)
 
-S2i_HB <- apply(mcmc$S2, 2, mean)   # strata-specific variance 
+S2i_HB <- apply(mcmc$S2, 2, mean)    
 Mu_HB <- apply(mcmc$Mu, 2, mean)
-wij_final <- rep(0,H)
-for(h in 1:H){
-  wij_final[h] <- (1/DATA2$Prob2[2*h-1]^2)+(1/DATA2$Prob2[2*h]^2)
+rho_HB <- mean(mcmc$rho)  
+S2i_HB_new <- array(NA,dim=c(2,2,H))
+for(h in 1:H){ # strata-specific variance
+  S2i_HB_new[,,h] <- matrix(c(1,rho_HB,rho_HB,1),ncol=2,nrow=2)*S2i_HB[h]
 }
-S2i_HB <- wij_final*S2i_HB 
-VarHB_PSU <- sum(S2i_HB)/(N^2) ## final HB var
+
+wij_final <- array(NA,dim=c(1,2,H))
+for(h in 1:H){
+  wij_final[,,h] <- c((1/DATA2$Prob2[2*h-1]),(1/DATA2$Prob2[2*h]))
+}
+S2i_HB_final <- rep(NA,H)
+for(h in 1:H){
+  S2i_HB_final[h] <- matrix(wij_final[,,h],1,2)%*%S2i_HB_new[,,h]%*%matrix(wij_final[,,h],2,1) 
+}
+
+VarHB_PSU <- sum(S2i_HB_final)/(N^2) ## final HB var
 
 low_coll <- mean_PSU-1.96*sqrt(VarColl_PSU)
 high_coll <- mean_PSU+1.96*sqrt(VarColl_PSU) 
