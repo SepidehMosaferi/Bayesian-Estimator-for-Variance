@@ -121,11 +121,11 @@ one.rep <- function(){
   ID <- SAMPLE_PSU$STRATUM
   mcmc <- HB_PSU2(Y, x, Pi, ID, p=2,L=7, mc=10000, bn=3000)
   
-  S2i_HB <- apply(mcmc$S2, 2, mean)   # strata-specific variance 
+  S2i_HB <- apply(mcmc$S2, 2, mean)   
   Mu_HB <- apply(mcmc$Mu, 2, mean)
   rho_HB <- mean(mcmc$rho)
   S2i_HB_new <- array(NA,dim=c(2,2,H))
-  for(h in 1:H){
+  for(h in 1:H){  # strata-specific variance 
     S2i_HB_new[,,h] <- matrix(c(1,rho_HB,rho_HB,1),ncol=2,nrow=2)*S2i_HB[h]
   }
   
@@ -137,7 +137,7 @@ one.rep <- function(){
   for(h in 1:H){
     S2i_HB_final[h] <- matrix(wij_final[,,h],1,2)%*%S2i_HB_new[,,h]%*%matrix(wij_final[,,h],2,1) 
   }
-  VarHB_PSU <- sum(S2i_HB_final*((Ni-ni)/Ni)*(Ni^2/N^2)*(1/ni)) 
+  VarHB_PSU <- sum(S2i_HB_final)/(N^2)
   
   # CI 
   ind <- c()
