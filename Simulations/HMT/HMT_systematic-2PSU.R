@@ -7,7 +7,7 @@
 require(PracTools); require(sampling); require(LaplacesDemon)
 require(pscl); require(MCMCpack); require(extraDistr); require(jipApprox)
 
-setwd("/Users/sepidehmosaferi/Documents/GitHub/Fine_Stratification_Variance/Simulations/HMT")
+setwd("/Users/sepidehmosaferi/Documents/GitHub/Bayesian-Estimator-for-Variance/Simulations/HMT")
 rm(list = ls(all = TRUE))
 source("HB-var-2PSU-HMT.R")
 
@@ -101,12 +101,21 @@ one.rep <- function(){
   
   S2i_HB <- apply(mcmc$S2, 2, mean)   # strata-specific variance 
   Mu_HB <- apply(mcmc$Mu, 2, mean)
-  wij_final <- rep(0,H)
+  rho_HB <- mean(mcmc$rho)
+  S2i_HB_new <- array(NA,dim=c(2,2,H))
   for(h in 1:H){
-    wij_final[h] <- (1/SAMPLE_PSU$Prob[2*h-1]^2)+(1/SAMPLE_PSU$Prob[2*h]^2)
+    S2i_HB_new[,,h] <- matrix(c(1,rho_HB,rho_HB,1),ncol=2,nrow=2)*S2i_HB[h]
   }
-  S2i_HB <- wij_final*S2i_HB 
-  VarHB_PSU <- sum(S2i_HB)/(N^2) ## final HB var
+  
+  wij_final <- array(NA,dim=c(1,2,H))
+  for(h in 1:H){
+    wij_final[,,h] <- c((1/SAMPLE_PSU$Prob[2*h-1]),(1/SAMPLE_PSU$Prob[2*h]))
+  }
+  S2i_HB_final <- rep(NA,H)
+  for(h in 1:H){
+    S2i_HB_final[h] <- matrix(wij_final[,,h],1,2)%*%S2i_HB_new[,,h]%*%matrix(wij_final[,,h],2,1) 
+  }
+  VarHB_PSU <- sum(S2i_HB_final)/(N^2) ## final HB var
   
   # CI 
   ind <- c()
@@ -126,8 +135,6 @@ many.reps <- replicate(n=R,one.rep()); dim(many.reps)
 many.reps <- t(many.reps)
 
 colnames(many.reps) <- c("Collapsed","Kernel","Bayes","Mean","ind_coll","ind_ker","ind_Bayes")
-write.table(many.reps, sep = "\t",col.names = TRUE,row.names = FALSE,
-            file = "/Users/sepidehmosaferi/Library/CloudStorage/Dropbox/Fine Stratification Variance/PSU.txt")
 
 ## criteria of evaluations:
 Bias_VarColl_PSU <- mean(abs(many.reps[,1]-true_Var))

@@ -7,7 +7,7 @@
 require(PracTools); require(sampling); require(LaplacesDemon); require(MASS)
 require(pscl); require(MCMCpack); require(extraDistr); require(statmod)
 
-setwd("/Users/sepidehmosaferi/Documents/GitHub/Fine_Stratification_Variance/Simulations/Normal")
+setwd("/Users/sepidehmosaferi/Documents/GitHub/Bayesian-Estimator-for-Variance/Simulations/Normal")
 rm(list = ls(all = TRUE))
 source("HB-var-2PSU.R")
 
@@ -122,7 +122,22 @@ one.rep <- function(){
   mcmc <- HB_PSU2(Y, x, Pi, ID, p=2,L=7, mc=10000, bn=3000)
   
   S2i_HB <- apply(mcmc$S2, 2, mean)   # strata-specific variance 
-  VarHB_PSU <- sum(S2i_HB)*((Ni-ni)/Ni)*(Ni^2/ni)/(N^2)
+  Mu_HB <- apply(mcmc$Mu, 2, mean)
+  rho_HB <- mean(mcmc$rho)
+  S2i_HB_new <- array(NA,dim=c(2,2,H))
+  for(h in 1:H){
+    S2i_HB_new[,,h] <- matrix(c(1,rho_HB,rho_HB,1),ncol=2,nrow=2)*S2i_HB[h]
+  }
+  
+  wij_final <- array(NA,dim=c(1,2,H))
+  for(h in 1:H){
+    wij_final[,,h] <- c((1/SAMPLE_PSU$Prob[2*h-1]),(1/SAMPLE_PSU$Prob[2*h]))
+  }
+  S2i_HB_final <- rep(NA,H)
+  for(h in 1:H){
+    S2i_HB_final[h] <- matrix(wij_final[,,h],1,2)%*%S2i_HB_new[,,h]%*%matrix(wij_final[,,h],2,1) 
+  }
+  VarHB_PSU <- sum(S2i_HB_final*((Ni-ni)/Ni)*(Ni^2/N^2)*(1/ni)) 
   
   # CI 
   ind <- c()

@@ -100,8 +100,24 @@ one.rep <- function(){
   ID <- SAMPLE_PSU$Stratum
   mcmc <- HB_PSU2(Y, x, Pi, ID, L=7, mc=10000, bn=3000)
   
-  S2i_HB <- apply(mcmc$S2, 2, mean)   # strata-specific variance 
-  VarHB_PSU <- sum(S2i_HB*((Ni-ni)/Ni)*(Ni^2/N^2)*(1/ni)) 
+  S2i_HB <- apply(mcmc$S2, 2, mean)    
+  Mu_HB <- apply(mcmc$Mu, 2, mean)
+  rho_HB <- mean(mcmc$rho)  
+  S2i_HB_new <- array(NA,dim=c(2,2,H))
+  for(h in 1:H){ # strata-specific variance
+    S2i_HB_new[,,h] <- matrix(c(1,rho_HB,rho_HB,1),ncol=2,nrow=2)*S2i_HB[h]
+  }
+  
+  wij_final <- array(NA,dim=c(1,2,H))
+  for(h in 1:H){
+    wij_final[,,h] <- c((1/SAMPLE_PSU$Prob[2*h-1]),(1/SAMPLE_PSU$Prob[2*h]))
+  }
+  S2i_HB_final <- rep(NA,H)
+  for(h in 1:H){
+    S2i_HB_final[h] <- matrix(wij_final[,,h],1,2)%*%S2i_HB_new[,,h]%*%matrix(wij_final[,,h],2,1) 
+  }
+  
+  VarHB_PSU <- sum(S2i_HB_final)/(N^2)
   
   # CI 
   ind <- c()
@@ -121,9 +137,6 @@ many.reps <- replicate(n=R,one.rep()); dim(many.reps)
 many.reps <- t(many.reps)
 
 colnames(many.reps) <- c("Collapsed","Kernel","Bayes","Mean","ind_coll","ind_ker","ind_Bayes")
-write.table(many.reps, sep = "\t",col.names = TRUE,row.names = FALSE,
-            file = "/Users/sepidehmosaferi/Library/CloudStorage/Dropbox/Fine Stratification Variance/PSU.txt")
-
 
 ## criteria of evaluations:
 Bias_VarColl_PSU <- mean(abs(many.reps[,1]-true_Var))
