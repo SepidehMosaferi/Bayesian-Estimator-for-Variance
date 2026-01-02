@@ -4,9 +4,6 @@ library(dplyr); library(ggplot2)
 load(file="Data_1PSU.RData")
 View(Data_1PSU)
 
-## defining probs
-Data_1PSU$prob <- 1/(as.numeric(Data_1PSU$WGT2015_2017))
-
 ## recoding strata
 Data_1PSU$SEST[Data_1PSU$SEST=="305"] <- 1
 Data_1PSU$SEST[Data_1PSU$SEST=="309"] <- 2
@@ -49,7 +46,7 @@ CollIndex <- rep(1:(H/2),each=ng)
 DATA$CollIndex <- CollIndex 
 
 tHT_PSU <- rep(0,H)
-## Note: for all variables, multiply tHT_PSU[i] by 10.
+
 for (i in 1:H)
 {
   tHT_PSU[i] <- 10*sum(DATA$y[DATA$Stratum==i]/
