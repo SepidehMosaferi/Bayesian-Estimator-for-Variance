@@ -73,7 +73,7 @@ tHT_PSU <- rep(0,H)
 
 for (i in 1:H)
 {
-  tHT_PSU[i] <- 4*sum(DATA2$y2[DATA2$Stratum==i]/
+  tHT_PSU[i] <- sum(DATA2$y2[DATA2$Stratum==i]/
                       DATA2$Prob2[DATA2$Stratum==i])
 }
 VarColl_each_PSU <- rep(0,H/2)
